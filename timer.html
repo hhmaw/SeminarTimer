@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fullscreen Timer</title>
 <style>
 html,body{
@@ -56,42 +57,124 @@ html,body{
     width:min(1200px, calc(100vw - 30px));
 }
 
-#configPanel{
-    position:fixed;
-    left:50%;
-    bottom:55px;
-    transform:translateX(-50%);
-    background:rgba(20,20,20,0.97);
-    border:1px solid #444;
-    border-radius:12px;
-    padding:16px;
+#overlay{
     display:none;
-    width:min(900px, calc(100vw - 30px));
-    max-height:70vh;
-    overflow:auto;
-    box-shadow:0 10px 30px rgba(0,0,0,0.35);
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.85);
+    backdrop-filter: blur(6px);
+    z-index:14;
+    pointer-events: auto;
 }
 
-#configPanel.open{
-    display:block;
+    #mobileControls {
+        display: flex;
+        position: fixed;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%) translateY(0);
+        transition: transform 200ms ease, opacity 200ms ease;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 12px;
+        background: rgba(0,0,0,0.60);
+        border-radius: 14px;
+        max-width: calc(100vw - 18px);
+        z-index: 20;
+        box-sizing: border-box;
+        opacity: 1;
+    }
+
+    #mobileControls.slide-out {
+        transform: translateX(-50%) translateY(130%);
+        opacity: 0;
+    }
+
+    .controlBtn {
+        padding: 10px 12px;
+        font-size: 14px;
+        border-radius: 10px;
+        border: 1px solid #555;
+        background: rgba(255,255,255,0.08);
+        color: #fff;
+        cursor: pointer;
+        min-width: 70px;
+        white-space: nowrap;
+    }
+
+    .controlBtn:hover {
+        background: rgba(255,255,255,0.14);
+    }
+
+    .teacher-only {
+        display: none;
+    }
+
+    #configPanel {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255,255,255,0.96);
+        color: #000;
+        border: 0;
+        border-radius: 14px;
+        padding: 16px 14px 14px;
+        display: none;
+        width: min(560px, 90vw);
+        max-height: 90vh;
+        overflow: auto;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+        z-index: 9999;
+        box-sizing: border-box;
+    }
+
+    #configPanel.open{
+        display:block;
+        opacity: 1;
+    }
+
+    @keyframes slideIn {
+        to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    }
+
+.configHeader{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:14px;
 }
 
-.sectionTitle{
-    font-size:15px;
-    font-weight:700;
-    margin:0 0 10px 0;
+.iconBtn{
+    padding:6px 10px;
+    border:none;
+    border-radius:10px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.iconBtn:hover{
+    background: rgba(255,255,255,0.18);
 }
 
 .settingsGrid{
     display:grid;
-    grid-template-columns:repeat(4, minmax(120px, 1fr));
+    grid-template-columns:repeat(3, minmax(0, 1fr));
     gap:10px;
     margin-bottom:16px;
 }
 
 .teacherGrid{
     display:grid;
-    grid-template-columns:repeat(4, minmax(140px, 1fr));
+    grid-template-columns:repeat(3, minmax(0, 1fr));
     gap:10px;
     margin-bottom:16px;
 }
@@ -102,18 +185,44 @@ html,body{
     gap:6px;
 }
 
-.field label{
-    font-size:13px;
-    opacity:0.85;
-}
+    .stepper{
+        display:flex;
+        align-items:center;
+        gap:4px;
+        width: 100%;
+    }
+
+    .stepper input[type="number"]{
+        flex: 0 0 72px;
+        min-width: 50px;
+        text-align: center;
+    }
+
+    .stepperBtn{
+        width: 28px;
+        height: 28px;
+        border: 1px solid rgba(0,0,0,0.2);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.85);
+        color: #000;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .stepperBtn:hover{
+        background: rgba(255,255,255,1);
+    }
 
 input[type="number"]{
     padding:8px 10px;
     font-size:15px;
-    border:1px solid #444;
+    border:1px solid #ccc;
     border-radius:8px;
-    background:#1b1b1b;
-    color:#fff;
+    background:#fff;
+    color:#000;
     text-align:center;
 }
 
@@ -145,6 +254,16 @@ button:hover{
     background:#2d2d2d;
 }
 
+#configPanel button{
+    border:1px solid rgba(0,0,0,0.2);
+    background:#fff;
+    color:#000;
+}
+
+#configPanel button:hover{
+    background:#f2f2f2;
+}
+
 .warning{
     background:#ffd400;
     color:#000;
@@ -173,11 +292,89 @@ button:hover{
 @media (max-width: 900px){
     .settingsGrid,
     .teacherGrid{
-        grid-template-columns:repeat(2, minmax(120px, 1fr));
+        grid-template-columns:repeat(3, minmax(120px, 1fr));
     }
 
     #phase{ font-size:5vw; }
     #subinfo{ font-size:3.2vw; }
+}
+
+@media (max-width: 600px) {
+    #container {
+        padding: 10px 8px 60px;
+    }
+
+    #time {
+        font-size: 18vw;
+    }
+
+    #phase { font-size: 6vw; }
+    #subinfo { font-size: 4vw; }
+
+    #legend {
+        font-size: 14px;
+        left: 50%;
+        width: calc(100vw - 30px);
+        padding: 10px 12px;
+    }
+
+    #mobileControls {
+        display: flex;
+    }
+
+    #configPanel {
+        position: fixed;
+        inset: 0;
+        background: rgba(255,255,255,0.96);
+        color: #000;
+        border: 0;
+        border-radius: 0;
+        padding: 16px 14px 14px;
+        display: none;
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        overflow: auto;
+        box-shadow: none;
+        z-index: 9999;
+        box-sizing: border-box;
+    }
+
+    #configPanel.open {
+        display: block !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+
+    .settingsGrid,
+    .teacherGrid {
+        grid-template-columns: repeat(3, minmax(120px, 1fr));
+    }
+
+    .buttonRow {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #closeConfigBtn {
+        display: none;
+    }
+
+    button {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 16px;
+    }
+
+    input[type="number"] {
+        font-size: 16px;
+        padding: 12px 14px;
+    }
+
+    .field label {
+        font-size: 14px;
+    }
 }
 </style>
 </head>
@@ -189,8 +386,13 @@ button:hover{
     <div id="subinfo"></div>
 </div>
 
+<div id="overlay"></div>
+
 <div id="configPanel">
-    <div class="sectionTitle">Timer Settings</div>
+    <div class="configHeader">
+        <div class="sectionTitle">Timer Settings</div>
+        <button id="closeConfigBtnTop" class="iconBtn" type="button" aria-label="Close settings">✕</button>
+    </div>
 
     <div class="settingsGrid">
         <div class="field">
@@ -265,8 +467,21 @@ button:hover{
 </div>
 
 <div id="legend">
-    Normal: Space Start/Pause • R Reset • ↑↓ ±1 min • ←→ ±10 sec • F Fullscreen • Click here for settings<br>
-    Teacher mode: Space Next block • Backspace Previous block • P Pause/Unpause • R Restart schedule • Arrows adjust current block
+    Normal: Tap controls to Start/Pause, Reset, or adjust time. Tap here for settings.<br>
+    Teacher mode: Use on-screen buttons for Next/Previous blocks and Pause/Resume.
+</div>
+
+<div id="mobileControls" aria-label="Timer controls">
+    <button id="startPauseBtn" class="controlBtn" type="button">Start</button>
+    <button id="resetBtn" class="controlBtn" type="button">Reset</button>
+    <button id="minus1mBtn" class="controlBtn" type="button">−1m</button>
+    <button id="plus1mBtn" class="controlBtn" type="button">+1m</button>
+    <button id="minus10sBtn" class="controlBtn" type="button">−10s</button>
+    <button id="plus10sBtn" class="controlBtn" type="button">+10s</button>
+    <button id="fullscreenBtn" class="controlBtn" type="button">Fullscreen</button>
+    <button id="settingsBtn" class="controlBtn" type="button">Settings</button>
+    <button id="teacherPrevBtn" class="controlBtn teacher-only" type="button">◀ Prev</button>
+    <button id="teacherNextBtn" class="controlBtn teacher-only" type="button">Next ▶</button>
 </div>
 
 <script>
@@ -297,6 +512,27 @@ const phaseEl = document.getElementById("phase");
 const subinfoEl = document.getElementById("subinfo");
 const legendEl = document.getElementById("legend");
 const configPanelEl = document.getElementById("configPanel");
+const overlayEl = document.getElementById("overlay");
+const mobileControlsEl = document.getElementById("mobileControls");
+
+function isMobileAgent(){
+    return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile/.test(navigator.userAgent) || window.matchMedia("(max-width: 768px)").matches;
+}
+
+function showError(message){
+    if(subinfoEl){
+        subinfoEl.textContent = `Error: ${message}`;
+        subinfoEl.style.color = "#ff6666";
+    }
+}
+
+window.addEventListener("error", e => {
+    showError(e.message || String(e));
+});
+window.addEventListener("unhandledrejection", e => {
+    const msg = e.reason ? (e.reason.message || String(e.reason)) : "Unknown promise rejection";
+    showError(msg);
+});
 
 const defaultMinutesInput = document.getElementById("defaultMinutes");
 const teacherModeEnabledInput = document.getElementById("teacherModeEnabled");
@@ -314,6 +550,18 @@ const deletePresetBtn = document.getElementById("deletePresetBtn");
 
 const saveDefaultBtn = document.getElementById("saveDefaultBtn");
 const closeConfigBtn = document.getElementById("closeConfigBtn");
+const closeConfigBtnTop = document.getElementById("closeConfigBtnTop");
+
+const startPauseBtn = document.getElementById("startPauseBtn");
+const resetBtn = document.getElementById("resetBtn");
+const minus1mBtn = document.getElementById("minus1mBtn");
+const plus1mBtn = document.getElementById("plus1mBtn");
+const minus10sBtn = document.getElementById("minus10sBtn");
+const plus10sBtn = document.getElementById("plus10sBtn");
+const fullscreenBtn = document.getElementById("fullscreenBtn");
+const settingsBtn = document.getElementById("settingsBtn");
+const teacherPrevBtn = document.getElementById("teacherPrevBtn");
+const teacherNextBtn = document.getElementById("teacherNextBtn");
 
 presetSelect.addEventListener("change", () => {
     const name = presetSelect.value;
@@ -329,6 +577,27 @@ deletePresetBtn.addEventListener("click", () => {
     }
 });
 
+startPauseBtn?.addEventListener("click", () => startPause());
+resetBtn?.addEventListener("click", () => reset());
+minus1mBtn?.addEventListener("click", () => adjustTime(-60));
+plus1mBtn?.addEventListener("click", () => adjustTime(60));
+minus10sBtn?.addEventListener("click", () => adjustTime(-10));
+plus10sBtn?.addEventListener("click", () => adjustTime(10));
+fullscreenBtn?.addEventListener("click", () => {
+    if(!document.fullscreenElement){
+        document.documentElement.requestFullscreen();
+    }else{
+        document.exitFullscreen();
+    }
+});
+settingsBtn?.addEventListener("click", () => {
+    if(subinfoEl){
+        subinfoEl.textContent = "Settings button clicked";
+    }
+    openSettingsModal();
+});
+teacherPrevBtn?.addEventListener("click", () => previousTeacherStep());
+teacherNextBtn?.addEventListener("click", () => advanceTeacherStep(/*auto=*/ false));
 
 function loadSettings(){
     try{
@@ -354,6 +623,43 @@ function loadSettings(){
 
 function saveSettings(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+}
+
+function setupNumberSteppers(){
+    const numberInputs = configPanelEl.querySelectorAll('input[type="number"]');
+    numberInputs.forEach(input => {
+        if(input.closest('.stepper')) return; // already wrapped
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'stepper';
+
+        const step = parseFloat(input.step) || 1;
+
+        const dec = document.createElement('button');
+        dec.type = 'button';
+        dec.className = 'stepperBtn';
+        dec.textContent = '−';
+        dec.setAttribute('aria-label', 'Decrease');
+        dec.addEventListener('click', () => {
+            input.value = Number(input.value || 0) - step;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+
+        const inc = document.createElement('button');
+        inc.type = 'button';
+        inc.className = 'stepperBtn';
+        inc.textContent = '+';
+        inc.setAttribute('aria-label', 'Increase');
+        inc.addEventListener('click', () => {
+            input.value = Number(input.value || 0) + step;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+
+        input.parentNode.insertBefore(wrapper, input);
+        wrapper.appendChild(dec);
+        wrapper.appendChild(input);
+        wrapper.appendChild(inc);
+    });
 }
 
 
@@ -444,9 +750,26 @@ function savePreset(){
 
 function deletePreset(name){
     if(!settings.presets || !settings.presets[name]) return;
+
+    const keys = Object.keys(settings.presets || {}).sort();
+    const index = keys.indexOf(name);
+
     delete settings.presets[name];
     saveSettings();
     updatePresetOptions();
+
+    const remainingKeys = Object.keys(settings.presets || {}).sort();
+    if(remainingKeys.length === 0){
+        // No presets left: leave user in default state
+        return;
+    }
+
+    // Prefer the next preset, or fall back to the previous one.
+    const newIndex = Math.min(index, remainingKeys.length - 1);
+    const newSelection = remainingKeys[newIndex];
+
+    presetSelect.value = newSelection;
+    applyPreset(newSelection);
 }
 
 function positiveInt(value, fallback){
@@ -583,6 +906,11 @@ function update(){
 
     document.body.classList.remove("warning", "flash", "breakPhase", "switchPhase");
 
+    // Always hide the legend text — the on-screen controls are used instead.
+    if(legendEl){
+        legendEl.style.display = "none";
+    }
+
     if(settings.teacherMode){
         const step = getCurrentStep();
 
@@ -610,6 +938,15 @@ function update(){
         phaseEl.textContent = "";
         subinfoEl.textContent = "";
     }
+
+    if(startPauseBtn){
+        startPauseBtn.textContent = running ? "Pause" : "Start";
+    }
+
+    const teacherModeActive = Boolean(settings.teacherMode);
+    document.querySelectorAll(".teacher-only").forEach(btn => {
+        btn.style.display = teacherModeActive ? "inline-flex" : "none";
+    });
 
     if(time <= 120 && time > 0){
         document.body.classList.add("warning");
@@ -673,6 +1010,7 @@ function advanceTeacherStep(auto = true){
     const step = getCurrentStep();
     if(step){
         time = step.duration;
+        ensureTimerRunning();
         update();
     }else{
         running = false;
@@ -696,6 +1034,18 @@ function startPause(){
     update();
 }
 
+function ensureTimerRunning(){
+    if(running) return;
+
+    running = true;
+    if(!settings.teacherMode){
+        // Allow gong to play again when reaching 00:00 in normal mode.
+        gongPlayed = false;
+    }
+    clearInterval(interval);
+    interval = setInterval(tick, 1000);
+}
+
 function reset(){
     running = false;
     clearInterval(interval);
@@ -717,6 +1067,7 @@ function previousTeacherStep(){
     }else{
         time = settings.defaultTime;
     }
+    ensureTimerRunning();
     update();
 }
 
@@ -727,13 +1078,41 @@ function adjustTime(seconds){
 
 function openConfig(){
     syncInputsFromSettings();
-    configPanelEl.classList.add("open");
+
+    if(overlayEl){
+        overlayEl.style.display = "block";
+    }
+    if(mobileControlsEl){
+        mobileControlsEl.classList.add("slide-out");
+    }
+    document.body.style.overflow = "hidden";
+
+    if(configPanelEl){
+        configPanelEl.style.display = "block";
+        configPanelEl.classList.add("open");
+    }
+
     defaultMinutesInput.focus();
     defaultMinutesInput.select();
 }
 
 function closeConfig(){
-    configPanelEl.classList.remove("open");
+    const debugPanel = document.getElementById("debugSettingsPanel");
+    if(debugPanel){
+        debugPanel.remove();
+    }
+
+    if(configPanelEl){
+        configPanelEl.classList.remove("open");
+        configPanelEl.style.display = "none";
+    }
+    if(overlayEl){
+        overlayEl.style.display = "none";
+    }
+    if(mobileControlsEl){
+        mobileControlsEl.classList.remove("slide-out");
+    }
+    document.body.style.overflow = "";
     if(document.activeElement){
         document.activeElement.blur();
     }
@@ -745,6 +1124,10 @@ function toggleConfig(){
     }else{
         openConfig();
     }
+}
+
+function openSettingsModal(){
+    openConfig();
 }
 
 function applySettingsFromInputs(){
@@ -778,6 +1161,20 @@ teacherModeEnabledInput.addEventListener("change", () => {
 legendEl.addEventListener("click", toggleConfig);
 saveDefaultBtn.addEventListener("click", applySettingsFromInputs);
 closeConfigBtn.addEventListener("click", closeConfig);
+closeConfigBtnTop?.addEventListener("click", closeConfig);
+if(overlayEl){
+    overlayEl.addEventListener("click", closeConfig);
+}
+
+// Make it easy to start/pause by tapping the timer area.
+const containerEl = document.getElementById("container");
+if(containerEl){
+    containerEl.addEventListener("click", e => {
+        if(e.target.closest("button") || e.target.closest("input") || e.target.closest("select")) return;
+        if(configPanelEl.classList.contains("open")) return;
+        startPause();
+    });
+}
 
 configPanelEl.addEventListener("keydown", e => {
     if(e.key === "Enter" && e.target.tagName === "INPUT"){
@@ -924,15 +1321,45 @@ document.addEventListener("click", e => {
     if(
         configPanelEl.classList.contains("open") &&
         !configPanelEl.contains(e.target) &&
-        e.target !== legendEl
+        e.target !== legendEl &&
+        !(mobileControlsEl && mobileControlsEl.contains(e.target))
     ){
         closeConfig();
     }
 });
 
 syncInputsFromSettings();
+setupNumberSteppers();
 setTimeForCurrentMode();
 update();
+
+// Auto-hide the mobile controls after a short idle period.
+let idleHideTimer = null;
+const idleHideDelay = 2500;
+function showMobileControls(){
+    if(!mobileControlsEl) return;
+    mobileControlsEl.classList.remove("slide-out");
+}
+function hideMobileControls(){
+    if(!mobileControlsEl) return;
+    mobileControlsEl.classList.add("slide-out");
+}
+function resetIdleHide(){
+    showMobileControls();
+    clearTimeout(idleHideTimer);
+
+    // On desktop, keep the control bar visible at all times.
+    if(isMobileAgent()){
+        idleHideTimer = setTimeout(hideMobileControls, idleHideDelay);
+    }
+}
+
+["pointerdown","touchstart","keydown"].forEach(evt => {
+    document.addEventListener(evt, resetIdleHide, { passive: true });
+});
+
+// Start hiding after a few seconds.
+resetIdleHide();
 </script>
 </body>
 </html>

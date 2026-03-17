@@ -9,6 +9,7 @@
 ## 🚀 Features
 
 - **Fullscreen countdown timer** with large digits
+- **On-screen control bar** (always visible on desktop, auto-hides on mobile)
 - **Keyboard controls** for quick operation
 - **Teacher Mode** (scheduled sessions + auto breaks)
 - Breaks inserted based on **planned elapsed time** (not wall clock)
@@ -18,8 +19,19 @@
 
 ## 🧭 How to run
 
-1. Open `timer.html` in a browser (double-click or host via local server).
-2. Use the UI or keyboard shortcuts to start and control the timer.
+### Option A — Local server (recommended)
+1. Open a terminal in this folder.
+2. Run:
+   ```bash
+   python -m http.server 8000
+   ```
+3. In a browser on the same network, visit:
+   - `http://localhost:8000/timer.html` (on your PC)
+   - `http://<your-pc-ip>:8000/timer.html` (on your phone)
+
+### Option B — Open file directly
+- Double-click `timer.html` to open it in a browser.
+- Some browsers may restrict scripts when opened via `file://`, so the server option is more reliable.
 
 ---
 
@@ -53,7 +65,7 @@ Enable **Teacher mode** in the settings panel to activate a schedule system.
 
 ## ⚙️ Settings & Presets
 
-Open the settings panel by clicking the legend text at the bottom of the screen.
+Open the settings panel by clicking the **Settings** button in the control bar (or tapping the legend text on mobile).
 
 ### Adjustable settings
 - Default timer (minutes)
