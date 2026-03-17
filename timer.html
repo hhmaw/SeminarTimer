@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fullscreen Timer</title>
+<style>
+html,body{
+    margin:0;
+    height:100%;
+    font-family:system-ui,Arial,sans-serif;
+    background:#111;
+    color:white;
+}
+
+#container{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    height:100%;
+    text-align:center;
+}
+
+#time{
+    font-size:20vw;
+    font-weight:700;
+    letter-spacing:0.05em;
+    cursor:default;
+}
+
+#phase{
+    margin-top:8px;
+    font-size:2.2vw;
+    opacity:0.9;
+    min-height:1.4em;
+}
+
+#subinfo{
+    margin-top:10px;
+    font-size:1.2vw;
+    opacity:0.7;
+    min-height:1.4em;
+}
+
+#legend{
+    position:fixed;
+    bottom:15px;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:16px;
+    opacity:0.7;
+    cursor:pointer;
+    user-select:none;
+    text-align:center;
+    white-space:normal;
+    width:min(1200px, calc(100vw - 30px));
+}
+
+#configPanel{
+    position:fixed;
+    left:50%;
+    bottom:55px;
+    transform:translateX(-50%);
+    background:rgba(20,20,20,0.97);
+    border:1px solid #444;
+    border-radius:12px;
+    padding:16px;
+    display:none;
+    width:min(900px, calc(100vw - 30px));
+    max-height:70vh;
+    overflow:auto;
+    box-shadow:0 10px 30px rgba(0,0,0,0.35);
+}
+
+#configPanel.open{
+    display:block;
+}
+
+.sectionTitle{
+    font-size:15px;
+    font-weight:700;
+    margin:0 0 10px 0;
+}
+
+.settingsGrid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(120px, 1fr));
+    gap:10px;
+    margin-bottom:16px;
+}
+
+.teacherGrid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(140px, 1fr));
+    gap:10px;
+    margin-bottom:16px;
+}
+
+.field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.field label{
+    font-size:13px;
+    opacity:0.85;
+}
+
+input[type="number"]{
+    padding:8px 10px;
+    font-size:15px;
+    border:1px solid #444;
+    border-radius:8px;
+    background:#1b1b1b;
+    color:#fff;
+    text-align:center;
+}
+
+.checkboxRow{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:14px;
+    font-size:14px;
+}
+
+.buttonRow{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+}
+
+button{
+    padding:8px 12px;
+    font-size:15px;
+    border:1px solid #444;
+    border-radius:8px;
+    background:#222;
+    color:#fff;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#2d2d2d;
+}
+
+.warning{
+    background:#ffd400;
+    color:#000;
+}
+
+.flash{
+    animation:flashRed 2s infinite;
+}
+
+.breakPhase{
+    background:#0a2f54;
+    color:#fff;
+}
+
+.switchPhase{
+    background:#2e244a;
+    color:#fff;
+}
+
+@keyframes flashRed{
+    0%{background:#300;}
+    50%{background:#ff0000;}
+    100%{background:#300;}
+}
+
+@media (max-width: 900px){
+    .settingsGrid,
+    .teacherGrid{
+        grid-template-columns:repeat(2, minmax(120px, 1fr));
+    }
+
+    #phase{ font-size:5vw; }
+    #subinfo{ font-size:3.2vw; }
+}
+</style>
+</head>
+
+<body>
+<div id="container">
+    <div id="time">20:00</div>
+    <div id="phase"></div>
+    <div id="subinfo"></div>
+</div>
+
+<div id="configPanel">
+    <div class="sectionTitle">Timer Settings</div>
+
+    <div class="settingsGrid">
+        <div class="field">
+            <label for="defaultMinutes">Default timer (min)</label>
+            <input id="defaultMinutes" type="number" min="1" step="1">
+        </div>
+
+        <div class="field">
+            <label for="playGong">Play gong when timer ends</label>
+            <input id="playGong" type="checkbox">
+        </div>
+    </div>
+
+    <div class="checkboxRow">
+        <input id="teacherModeEnabled" type="checkbox">
+        <label for="teacherModeEnabled">Enable teacher mode</label>
+    </div>
+
+    <div id="teacherSettingsWrap">
+        <div class="sectionTitle">Teacher Mode Schedule</div>
+        <div class="teacherGrid">
+            <div class="field">
+                <label for="teacherPresentations">Presentations total</label>
+                <input id="teacherPresentations" type="number" min="1" step="1">
+            </div>
+
+            <div class="field">
+                <label for="teacherPresentationMin">Presentation time (min)</label>
+                <input id="teacherPresentationMin" type="number" min="1" step="1">
+            </div>
+
+            <div class="field">
+                <label for="teacherQuestionsMin">Questions after each (min)</label>
+                <input id="teacherQuestionsMin" type="number" min="0" step="1">
+            </div>
+
+            <div class="field">
+                <label for="teacherSwitchMin">Switch time (min)</label>
+                <input id="teacherSwitchMin" type="number" min="0" step="1">
+            </div>
+
+            <div class="field">
+                <label for="teacherBreakEveryMin">Break after elapsed time (min)</label>
+                <input id="teacherBreakEveryMin" type="number" min="0" step="1">
+            </div>
+
+            <div class="field">
+                <label for="teacherBreakMin">Break length (min)</label>
+                <input id="teacherBreakMin" type="number" min="0" step="1">
+            </div>
+        </div>
+    </div>
+
+    <div id="presetWrap">
+        <div class="sectionTitle">Presets / Import‑Export</div>
+
+        <div class="buttonRow">
+            <button id="deletePresetBtn">Delete selected</button>
+        </div>
+
+        <div class="field">
+            <label for="presetSelect">Saved presets</label>
+            <select id="presetSelect"></select>
+        </div>
+
+    </div>
+
+    <div class="buttonRow">
+        <button id="saveDefaultBtn">Save</button>
+        <button id="closeConfigBtn">Close</button>
+    </div>
+</div>
+
+<div id="legend">
+    Normal: Space Start/Pause • R Reset • ↑↓ ±1 min • ←→ ±10 sec • F Fullscreen • Click here for settings<br>
+    Teacher mode: Space Next block • Backspace Previous block • P Pause/Unpause • R Restart schedule • Arrows adjust current block
+</div>
+
+<script>
+const STORAGE_KEY = "fullscreenTimerSettingsV4";
+
+const DEFAULTS = {
+    defaultTime: 20 * 60,
+    teacherMode: false,
+    teacherPresentations: 8,
+    teacherPresentationMin: 10,
+    teacherQuestionsMin: 5,
+    teacherSwitchMin: 2,
+    teacherBreakEveryMin: 60,
+    teacherBreakMin: 10,
+    playGong: false,
+    presets: {}
+};
+
+let settings = loadSettings();
+let time = settings.defaultTime;
+let running = false;
+let interval = null;
+let teacherState = createTeacherState();
+let gongPlayed = false;
+
+const timeEl = document.getElementById("time");
+const phaseEl = document.getElementById("phase");
+const subinfoEl = document.getElementById("subinfo");
+const legendEl = document.getElementById("legend");
+const configPanelEl = document.getElementById("configPanel");
+
+const defaultMinutesInput = document.getElementById("defaultMinutes");
+const teacherModeEnabledInput = document.getElementById("teacherModeEnabled");
+const teacherPresentationsInput = document.getElementById("teacherPresentations");
+const teacherPresentationMinInput = document.getElementById("teacherPresentationMin");
+const teacherQuestionsMinInput = document.getElementById("teacherQuestionsMin");
+const teacherSwitchMinInput = document.getElementById("teacherSwitchMin");
+const teacherBreakEveryMinInput = document.getElementById("teacherBreakEveryMin");
+const teacherBreakMinInput = document.getElementById("teacherBreakMin");
+const playGongInput = document.getElementById("playGong");
+const teacherSettingsWrap = document.getElementById("teacherSettingsWrap");
+
+const presetSelect = document.getElementById("presetSelect");
+const deletePresetBtn = document.getElementById("deletePresetBtn");
+
+const saveDefaultBtn = document.getElementById("saveDefaultBtn");
+const closeConfigBtn = document.getElementById("closeConfigBtn");
+
+presetSelect.addEventListener("change", () => {
+    const name = presetSelect.value;
+    if(name){
+        applyPreset(name);
+    }
+});
+
+deletePresetBtn.addEventListener("click", () => {
+    const name = presetSelect.value;
+    if(name){
+        deletePreset(name);
+    }
+});
+
+
+function loadSettings(){
+    try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return {...DEFAULTS};
+        const parsed = JSON.parse(raw);
+        return {
+            defaultTime: positiveInt(parsed.defaultTime, DEFAULTS.defaultTime),
+            teacherMode: Boolean(parsed.teacherMode),
+            teacherPresentations: positiveInt(parsed.teacherPresentations, DEFAULTS.teacherPresentations),
+            teacherPresentationMin: positiveInt(parsed.teacherPresentationMin, DEFAULTS.teacherPresentationMin),
+            teacherQuestionsMin: nonNegativeInt(parsed.teacherQuestionsMin, DEFAULTS.teacherQuestionsMin),
+            teacherSwitchMin: nonNegativeInt(parsed.teacherSwitchMin, DEFAULTS.teacherSwitchMin),
+            teacherBreakEveryMin: nonNegativeInt(parsed.teacherBreakEveryMin, DEFAULTS.teacherBreakEveryMin),
+            teacherBreakMin: nonNegativeInt(parsed.teacherBreakMin, DEFAULTS.teacherBreakMin),
+            playGong: Boolean(parsed.playGong),
+            presets: parsed.presets && typeof parsed.presets === "object" ? parsed.presets : {}
+        };
+    }catch{
+        return {...DEFAULTS};
+    }
+}
+
+function saveSettings(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+}
+
+
+function updatePresetOptions(){
+    const keys = Object.keys(settings.presets || {}).sort();
+    const selected = presetSelect.value;
+
+    presetSelect.innerHTML = "";
+    keys.forEach(key => {
+        const opt = document.createElement("option");
+        opt.value = key;
+        opt.textContent = key;
+        presetSelect.appendChild(opt);
+    });
+
+    if(selected && settings.presets && settings.presets[selected]){
+        presetSelect.value = selected;
+    }
+}
+
+function applyPreset(name){
+    if(!settings.presets || !settings.presets[name]) return;
+    settings = {
+        ...settings,
+        ...settings.presets[name]
+    };
+    saveSettings();
+    syncInputsFromSettings();
+    reset();
+}
+
+function encodeSettings(obj){
+    const json = JSON.stringify(obj);
+    const b64 = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (_,p) => String.fromCharCode('0x'+p)));
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function genPresetName(){
+    const defaultMin = Math.round(settings.defaultTime / 60);
+    const gong = settings.playGong ? "G" : "g";
+
+    if(!settings.teacherMode){
+        // Normal mode presets only depend on timer length + gong.
+        return `N${defaultMin}m_${gong}`;
+    }
+
+    // Teacher mode presets include full schedule settings.
+    return `T${defaultMin}m_${gong}_P${settings.teacherPresentations}x${settings.teacherPresentationMin}m_Q${settings.teacherQuestionsMin}m_S${settings.teacherSwitchMin}m_BE${settings.teacherBreakEveryMin}m_B${settings.teacherBreakMin}m`;
+}
+
+function savePreset(){
+    const config = {
+        defaultTime: settings.defaultTime,
+        teacherMode: settings.teacherMode,
+        playGong: settings.playGong,
+        ...(settings.teacherMode ? {
+            teacherPresentations: settings.teacherPresentations,
+            teacherPresentationMin: settings.teacherPresentationMin,
+            teacherQuestionsMin: settings.teacherQuestionsMin,
+            teacherSwitchMin: settings.teacherSwitchMin,
+            teacherBreakEveryMin: settings.teacherBreakEveryMin,
+            teacherBreakMin: settings.teacherBreakMin
+        } : {})
+    };
+
+    settings.presets = settings.presets || {};
+    const configJson = JSON.stringify(config);
+
+    // If an identical preset already exists, use it instead of creating a new one.
+    for(const [key, value] of Object.entries(settings.presets)){
+        if(JSON.stringify(value) === configJson){
+            presetSelect.value = key;
+            return;
+        }
+    }
+
+    let key = genPresetName();
+    let counter = 1;
+    while(settings.presets[key]){
+        key = `${genPresetName()}-${counter++}`;
+    }
+
+    settings.presets[key] = config;
+    saveSettings();
+    updatePresetOptions();
+    presetSelect.value = key;
+}
+
+function deletePreset(name){
+    if(!settings.presets || !settings.presets[name]) return;
+    delete settings.presets[name];
+    saveSettings();
+    updatePresetOptions();
+}
+
+function positiveInt(value, fallback){
+    const n = parseInt(value, 10);
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+function nonNegativeInt(value, fallback){
+    const n = parseInt(value, 10);
+    return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
+function syncInputsFromSettings(){
+    defaultMinutesInput.value = Math.round(settings.defaultTime / 60);
+
+    teacherModeEnabledInput.checked = settings.teacherMode;
+    teacherPresentationsInput.value = settings.teacherPresentations;
+    teacherPresentationMinInput.value = settings.teacherPresentationMin;
+    teacherQuestionsMinInput.value = settings.teacherQuestionsMin;
+    teacherSwitchMinInput.value = settings.teacherSwitchMin;
+    teacherBreakEveryMinInput.value = settings.teacherBreakEveryMin;
+    teacherBreakMinInput.value = settings.teacherBreakMin;
+    playGongInput.checked = settings.playGong;
+    teacherSettingsWrap.style.display = settings.teacherMode ? "block" : "none";
+
+    updatePresetOptions();
+
+    // If teacher mode is enabled, show the full config panel immediately.
+    if(settings.teacherMode && !configPanelEl.classList.contains("open")){
+        configPanelEl.classList.add("open");
+    }
+}
+
+function format(t){
+    let sign = t < 0 ? "-" : "";
+    t = Math.abs(t);
+    let m = Math.floor(t / 60);
+    let s = t % 60;
+    return sign + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+}
+
+function createTeacherState(){
+    if(!settings.teacherMode){
+        return null;
+    }
+
+    const sequence = [];
+    const totalPresentations = settings.teacherPresentations;
+    const breakEverySeconds = settings.teacherBreakEveryMin * 60;
+    const breakSeconds = settings.teacherBreakMin * 60;
+    let elapsedInstructional = 0;
+    let nextBreakAt = breakEverySeconds;
+
+    const tryInsertBreakAtBoundary = (currentPresentation) => {
+        if(breakEverySeconds <= 0 || breakSeconds <= 0) return false;
+        if(currentPresentation >= totalPresentations) return false;
+
+        if(elapsedInstructional >= nextBreakAt){
+            // Insert one break at the first boundary where the accumulated planned time has passed the break threshold.
+            sequence.push({ type: "break", label: "Break", duration: breakSeconds });
+
+            // Advance the next break marker past any skipped thresholds.
+            while(elapsedInstructional >= nextBreakAt){
+                nextBreakAt += breakEverySeconds;
+            }
+
+            return true;
+        }
+
+        return false;
+    };
+
+    for(let i = 1; i <= totalPresentations; i++){
+        const presentationSeconds = settings.teacherPresentationMin * 60;
+        const questionSeconds = settings.teacherQuestionsMin * 60;
+        const switchSeconds = settings.teacherSwitchMin * 60;
+
+        sequence.push({
+            type: "presentation",
+            label: `Presentation ${i}/${totalPresentations}`,
+            duration: presentationSeconds
+        });
+        elapsedInstructional += presentationSeconds;
+
+        if(questionSeconds > 0){
+            sequence.push({
+                type: "questions",
+                label: `Questions after presentation ${i}`,
+                duration: questionSeconds
+            });
+            elapsedInstructional += questionSeconds;
+        }
+
+        // Decide what comes next between this presentation block and the next one.
+        const breakInserted = tryInsertBreakAtBoundary(i);
+        if(!breakInserted && i < totalPresentations && switchSeconds > 0){
+            sequence.push({
+                type: "switch",
+                label: "Switch time",
+                duration: switchSeconds
+            });
+            elapsedInstructional += switchSeconds;
+        }
+    }
+
+    if(sequence.length === 0){
+        return null;
+    }
+
+    return {
+        stepIndex: 0,
+        sequence
+    };
+}
+
+function getCurrentStep(){
+    if(!teacherState || !teacherState.sequence.length) return null;
+    return teacherState.sequence[teacherState.stepIndex] || null;
+}
+
+function setTimeForCurrentMode(){
+    if(settings.teacherMode){
+        teacherState = createTeacherState();
+        const step = getCurrentStep();
+        time = step ? step.duration : settings.defaultTime;
+    }else{
+        teacherState = null;
+        time = settings.defaultTime;
+    }
+}
+
+function update(){
+    timeEl.textContent = format(time);
+
+    document.body.classList.remove("warning", "flash", "breakPhase", "switchPhase");
+
+    if(settings.teacherMode){
+        const step = getCurrentStep();
+
+        if(step){
+            phaseEl.textContent = step.label;
+
+            if(step.type === "presentation"){
+                subinfoEl.textContent = running ? "Talk in progress" : "Talk paused";
+            }else if(step.type === "questions"){
+                subinfoEl.textContent = running ? "Question time" : "Questions paused";
+            }else if(step.type === "switch"){
+                subinfoEl.textContent = running ? "Prepare next presenter" : "Switch paused";
+                document.body.classList.add("switchPhase");
+            }else if(step.type === "break"){
+                subinfoEl.textContent = running ? "Pause" : "Break paused";
+                document.body.classList.add("breakPhase");
+            }else{
+                subinfoEl.textContent = "";
+            }
+        }else{
+            phaseEl.textContent = "Schedule complete";
+            subinfoEl.textContent = "Press R to restart";
+        }
+    }else{
+        phaseEl.textContent = "";
+        subinfoEl.textContent = "";
+    }
+
+    if(time <= 120 && time > 0){
+        document.body.classList.add("warning");
+    }
+
+    if(time <= 0){
+        document.body.classList.add("flash");
+    }
+}
+
+function playGong(){
+    try{
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 1.2);
+    }catch{
+        // Ignore audio errors (e.g., blocked by browser autoplay policy)
+    }
+}
+
+function tick(){
+    time--;
+    update();
+
+    if(time <= 0){
+        if(!settings.teacherMode){
+            if(settings.playGong && !gongPlayed){
+                playGong();
+                gongPlayed = true;
+            }
+        }
+
+        if(settings.teacherMode){
+            advanceTeacherStep(/*auto=*/ true);
+        }
+    }
+}
+
+function advanceTeacherStep(auto = true){
+    if(!teacherState) return;
+
+    if(auto && settings.playGong){
+        playGong();
+    }
+
+    teacherState.stepIndex++;
+
+    const step = getCurrentStep();
+    if(step){
+        time = step.duration;
+        update();
+    }else{
+        running = false;
+        clearInterval(interval);
+        time = 0;
+        update();
+    }
+}
+
+function startPause(){
+    running = !running;
+
+    if(running){
+        // Ensure the gong can play again in normal mode.
+        gongPlayed = false;
+        clearInterval(interval);
+        interval = setInterval(tick, 1000);
+    }else{
+        clearInterval(interval);
+    }
+    update();
+}
+
+function reset(){
+    running = false;
+    clearInterval(interval);
+    gongPlayed = false;
+    setTimeForCurrentMode();
+    update();
+}
+
+function previousTeacherStep(){
+    if(!teacherState) return;
+    if(teacherState.stepIndex <= 0){
+        teacherState.stepIndex = 0;
+    }else{
+        teacherState.stepIndex--;
+    }
+    const step = getCurrentStep();
+    if(step){
+        time = step.duration;
+    }else{
+        time = settings.defaultTime;
+    }
+    update();
+}
+
+function adjustTime(seconds){
+    time += seconds;
+    update();
+}
+
+function openConfig(){
+    syncInputsFromSettings();
+    configPanelEl.classList.add("open");
+    defaultMinutesInput.focus();
+    defaultMinutesInput.select();
+}
+
+function closeConfig(){
+    configPanelEl.classList.remove("open");
+    if(document.activeElement){
+        document.activeElement.blur();
+    }
+}
+
+function toggleConfig(){
+    if(configPanelEl.classList.contains("open")){
+        closeConfig();
+    }else{
+        openConfig();
+    }
+}
+
+function applySettingsFromInputs(){
+    settings = {
+        defaultTime: positiveInt(defaultMinutesInput.value, Math.round(DEFAULTS.defaultTime / 60)) * 60,
+        teacherMode: teacherModeEnabledInput.checked,
+        teacherPresentations: positiveInt(teacherPresentationsInput.value, DEFAULTS.teacherPresentations),
+        teacherPresentationMin: positiveInt(teacherPresentationMinInput.value, DEFAULTS.teacherPresentationMin),
+        teacherQuestionsMin: nonNegativeInt(teacherQuestionsMinInput.value, DEFAULTS.teacherQuestionsMin),
+        teacherSwitchMin: nonNegativeInt(teacherSwitchMinInput.value, DEFAULTS.teacherSwitchMin),
+        teacherBreakEveryMin: nonNegativeInt(teacherBreakEveryMinInput.value, DEFAULTS.teacherBreakEveryMin),
+        teacherBreakMin: nonNegativeInt(teacherBreakMinInput.value, DEFAULTS.teacherBreakMin),
+        playGong: playGongInput.checked,
+        presets: settings.presets || {}
+    };
+
+    saveSettings();
+    savePreset();
+    syncInputsFromSettings();
+    reset();
+    closeConfig();
+}
+
+teacherModeEnabledInput.addEventListener("change", () => {
+    teacherSettingsWrap.style.display = teacherModeEnabledInput.checked ? "block" : "none";
+    if(teacherModeEnabledInput.checked){
+        configPanelEl.classList.add("open");
+    }
+});
+
+legendEl.addEventListener("click", toggleConfig);
+saveDefaultBtn.addEventListener("click", applySettingsFromInputs);
+closeConfigBtn.addEventListener("click", closeConfig);
+
+configPanelEl.addEventListener("keydown", e => {
+    if(e.key === "Enter" && e.target.tagName === "INPUT"){
+        applySettingsFromInputs();
+    }
+    if(e.key === "Escape"){
+        closeConfig();
+    }
+});
+
+document.addEventListener("keydown", e => {
+    const target = e.target;
+    const tag = target && target.tagName ? target.tagName : "";
+    const insideConfig = configPanelEl.contains(target);
+
+    if(insideConfig && (tag === "INPUT" || tag === "BUTTON" || tag === "LABEL")){
+        if(e.key === "Escape"){
+            e.preventDefault();
+            closeConfig();
+        }
+        return;
+    }
+
+    if(settings.teacherMode){
+        if(e.code === "Space"){
+            e.preventDefault();
+            advanceTeacherStep(/*auto=*/ false);
+            return;
+        }
+
+        if(e.key === "Backspace"){
+            e.preventDefault();
+            previousTeacherStep();
+            return;
+        }
+
+        if(e.key === "p" || e.key === "P"){
+            e.preventDefault();
+            startPause();
+            return;
+        }
+
+        if(e.key === "r" || e.key === "R"){
+            e.preventDefault();
+            reset();
+            return;
+        }
+
+        if(e.key === "ArrowUp"){
+            e.preventDefault();
+            adjustTime(60);
+            return;
+        }
+
+        if(e.key === "ArrowDown"){
+            e.preventDefault();
+            adjustTime(-60);
+            return;
+        }
+
+        if(e.key === "ArrowRight"){
+            e.preventDefault();
+            adjustTime(10);
+            return;
+        }
+
+        if(e.key === "ArrowLeft"){
+            e.preventDefault();
+            adjustTime(-10);
+            return;
+        }
+
+        if(e.key === "f" || e.key === "F"){
+            e.preventDefault();
+            if(!document.fullscreenElement){
+                document.documentElement.requestFullscreen();
+            }else{
+                document.exitFullscreen();
+            }
+            return;
+        }
+
+        if(e.key === "Escape" && configPanelEl.classList.contains("open")){
+            e.preventDefault();
+            closeConfig();
+        }
+
+        return;
+    }
+
+    if(e.code === "Space"){
+        e.preventDefault();
+        startPause();
+        return;
+    }
+
+    if(e.key === "r" || e.key === "R"){
+        e.preventDefault();
+        reset();
+        return;
+    }
+
+    if(e.key === "ArrowUp"){
+        e.preventDefault();
+        adjustTime(60);
+        return;
+    }
+
+    if(e.key === "ArrowDown"){
+        e.preventDefault();
+        adjustTime(-60);
+        return;
+    }
+
+    if(e.key === "ArrowRight"){
+        e.preventDefault();
+        adjustTime(10);
+        return;
+    }
+
+    if(e.key === "ArrowLeft"){
+        e.preventDefault();
+        adjustTime(-10);
+        return;
+    }
+
+    if(e.key === "f" || e.key === "F"){
+        e.preventDefault();
+        if(!document.fullscreenElement){
+            document.documentElement.requestFullscreen();
+        }else{
+            document.exitFullscreen();
+        }
+        return;
+    }
+
+    if(e.key === "Escape" && configPanelEl.classList.contains("open")){
+        e.preventDefault();
+        closeConfig();
+    }
+});
+
+document.addEventListener("click", e => {
+    if(
+        configPanelEl.classList.contains("open") &&
+        !configPanelEl.contains(e.target) &&
+        e.target !== legendEl
+    ){
+        closeConfig();
+    }
+});
+
+syncInputsFromSettings();
+setTimeForCurrentMode();
+update();
+</script>
+</body>
+</html>
