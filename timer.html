@@ -516,7 +516,6 @@ let wakeLock = null;
 
 async function requestWakeLock(){
     if(!settings.keepAwake) return;
-    if(!isMobileAgent()) return;
     if(!('wakeLock' in navigator)) return;
     if(document.visibilityState !== 'visible') return;
     if(wakeLock) return;
@@ -540,7 +539,7 @@ async function releaseWakeLock(){
 }
 
 async function updateWakeLock(){
-    if(!settings.keepAwake || !isMobileAgent() || document.visibilityState !== 'visible'){
+    if(!settings.keepAwake || document.visibilityState !== 'visible'){
         await releaseWakeLock();
         return;
     }
