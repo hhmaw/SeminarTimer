@@ -19,7 +19,16 @@
 
 ## 🧭 How to run
 
-### Option A — Local server (recommended)
+### Option A — Open file directly (recommended)
+- Double-click `timer.html` to open it in a browser.
+- Some browsers may restrict scripts when opened via `file://`, so if you encounter issues, try Option B or C.
+
+### Option B — Open via HTML preview (no local server needed)
+- Visit:
+  - `https://htmlpreview.github.io/?https://github.com/hhmaw/SeminarTimer/blob/main/timer.html`
+- Or scan the QR code at the top of this README.
+
+### Option C — Run a local server
 1. Open a terminal in this folder.
 2. Run:
    ```bash
@@ -28,10 +37,6 @@
 3. In a browser on the same network, visit:
    - `http://localhost:8000/timer.html` (on your PC)
    - `http://<your-pc-ip>:8000/timer.html` (on your phone)
-
-### Option B — Open file directly
-- Double-click `timer.html` to open it in a browser.
-- Some browsers may restrict scripts when opened via `file://`, so the server option is more reliable.
 
 ---
 
@@ -79,7 +84,7 @@ Open the settings panel by clicking the **Settings** button in the control bar (
 
 ### Presets
 - Use **Save** in the config panel to store the current settings as a preset.
-- Presets are identified by a short readable name based on the settings (e.g., `N20m_G` or `T20m_G_P8x10m_...`).
+- Presets are identified by a short readable name based on the settings (e.g., `N20m_G` or `TG_P8x10m_...`).
 - Select a preset from the dropdown to apply it immediately.
 - Delete presets using the **Delete** button.
 

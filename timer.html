@@ -599,11 +599,35 @@ settingsBtn?.addEventListener("click", () => {
 teacherPrevBtn?.addEventListener("click", () => previousTeacherStep());
 teacherNextBtn?.addEventListener("click", () => advanceTeacherStep(/*auto=*/ false));
 
+function migrateTeacherPresetKeys(presets){
+    // Older presets included a “T<minutes>m_” prefix that is unused in teacher mode.
+    // Rename them to a cleaner format like “TG_…” or “Tg_…”.
+    for(const key of Object.keys(presets)){
+        const match = key.match(/^T\d+m_([gG]_.*)$/);
+        if(!match) continue;
+
+        const base = `T${match[1]}`;
+        let newKey = base;
+        let counter = 1;
+        while(newKey in presets && newKey !== key){
+            newKey = `${base}-${counter++}`;
+        }
+
+        if(newKey !== key){
+            presets[newKey] = presets[key];
+            delete presets[key];
+        }
+    }
+}
+
 function loadSettings(){
     try{
         const raw = localStorage.getItem(STORAGE_KEY);
         if(!raw) return {...DEFAULTS};
         const parsed = JSON.parse(raw);
+        const presets = parsed.presets && typeof parsed.presets === "object" ? parsed.presets : {};
+        migrateTeacherPresetKeys(presets);
+
         return {
             defaultTime: positiveInt(parsed.defaultTime, DEFAULTS.defaultTime),
             teacherMode: Boolean(parsed.teacherMode),
@@ -614,7 +638,7 @@ function loadSettings(){
             teacherBreakEveryMin: nonNegativeInt(parsed.teacherBreakEveryMin, DEFAULTS.teacherBreakEveryMin),
             teacherBreakMin: nonNegativeInt(parsed.teacherBreakMin, DEFAULTS.teacherBreakMin),
             playGong: Boolean(parsed.playGong),
-            presets: parsed.presets && typeof parsed.presets === "object" ? parsed.presets : {}
+            presets
         };
     }catch{
         return {...DEFAULTS};
@@ -707,7 +731,8 @@ function genPresetName(){
     }
 
     // Teacher mode presets include full schedule settings.
-    return `T${defaultMin}m_${gong}_P${settings.teacherPresentations}x${settings.teacherPresentationMin}m_Q${settings.teacherQuestionsMin}m_S${settings.teacherSwitchMin}m_BE${settings.teacherBreakEveryMin}m_B${settings.teacherBreakMin}m`;
+    // The base time (default timer) is not used in teacher mode, so it is omitted from the name.
+    return `T${gong}_P${settings.teacherPresentations}x${settings.teacherPresentationMin}m_Q${settings.teacherQuestionsMin}m_S${settings.teacherSwitchMin}m_BE${settings.teacherBreakEveryMin}m_B${settings.teacherBreakMin}m`;
 }
 
 function savePreset(){
