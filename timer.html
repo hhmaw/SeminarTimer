@@ -404,6 +404,11 @@ button:hover{
             <label for="playGong">Play gong when timer ends</label>
             <input id="playGong" type="checkbox">
         </div>
+
+        <div class="field">
+            <label for="keepAwake">Keep screen awake</label>
+            <input id="keepAwake" type="checkbox">
+        </div>
     </div>
 
     <div class="checkboxRow">
@@ -497,6 +502,7 @@ const DEFAULTS = {
     teacherBreakEveryMin: 60,
     teacherBreakMin: 10,
     playGong: false,
+    keepAwake: true,
     presets: {}
 };
 
@@ -506,6 +512,44 @@ let running = false;
 let interval = null;
 let teacherState = createTeacherState();
 let gongPlayed = false;
+let wakeLock = null;
+
+async function requestWakeLock(){
+    if(!settings.keepAwake) return;
+    if(!isMobileAgent()) return;
+    if(!('wakeLock' in navigator)) return;
+    if(document.visibilityState !== 'visible') return;
+    if(wakeLock) return;
+
+    try{
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => {
+            wakeLock = null;
+        });
+    }catch(err){
+        console.warn('Wake lock request failed:', err);
+    }
+}
+
+async function releaseWakeLock(){
+    if(!wakeLock) return;
+    try{
+        await wakeLock.release();
+    }catch{}
+    wakeLock = null;
+}
+
+async function updateWakeLock(){
+    if(!settings.keepAwake || !isMobileAgent() || document.visibilityState !== 'visible'){
+        await releaseWakeLock();
+        return;
+    }
+    await requestWakeLock();
+}
+
+document.addEventListener('visibilitychange', () => {
+    updateWakeLock();
+});
 
 const timeEl = document.getElementById("time");
 const phaseEl = document.getElementById("phase");
@@ -543,6 +587,7 @@ const teacherSwitchMinInput = document.getElementById("teacherSwitchMin");
 const teacherBreakEveryMinInput = document.getElementById("teacherBreakEveryMin");
 const teacherBreakMinInput = document.getElementById("teacherBreakMin");
 const playGongInput = document.getElementById("playGong");
+const keepAwakeInput = document.getElementById("keepAwake");
 const teacherSettingsWrap = document.getElementById("teacherSettingsWrap");
 
 const presetSelect = document.getElementById("presetSelect");
@@ -638,6 +683,7 @@ function loadSettings(){
             teacherBreakEveryMin: nonNegativeInt(parsed.teacherBreakEveryMin, DEFAULTS.teacherBreakEveryMin),
             teacherBreakMin: nonNegativeInt(parsed.teacherBreakMin, DEFAULTS.teacherBreakMin),
             playGong: Boolean(parsed.playGong),
+            keepAwake: (parsed.keepAwake === undefined) ? DEFAULTS.keepAwake : Boolean(parsed.keepAwake),
             presets
         };
     }catch{
@@ -740,6 +786,7 @@ function savePreset(){
         defaultTime: settings.defaultTime,
         teacherMode: settings.teacherMode,
         playGong: settings.playGong,
+        keepAwake: settings.keepAwake,
         ...(settings.teacherMode ? {
             teacherPresentations: settings.teacherPresentations,
             teacherPresentationMin: settings.teacherPresentationMin,
@@ -818,6 +865,7 @@ function syncInputsFromSettings(){
     teacherBreakEveryMinInput.value = settings.teacherBreakEveryMin;
     teacherBreakMinInput.value = settings.teacherBreakMin;
     playGongInput.checked = settings.playGong;
+    keepAwakeInput.checked = settings.keepAwake;
     teacherSettingsWrap.style.display = settings.teacherMode ? "block" : "none";
 
     updatePresetOptions();
@@ -1166,12 +1214,14 @@ function applySettingsFromInputs(){
         teacherBreakEveryMin: nonNegativeInt(teacherBreakEveryMinInput.value, DEFAULTS.teacherBreakEveryMin),
         teacherBreakMin: nonNegativeInt(teacherBreakMinInput.value, DEFAULTS.teacherBreakMin),
         playGong: playGongInput.checked,
+        keepAwake: keepAwakeInput.checked,
         presets: settings.presets || {}
     };
 
     saveSettings();
     savePreset();
     syncInputsFromSettings();
+    updateWakeLock();
     reset();
     closeConfig();
 }
@@ -1354,6 +1404,7 @@ document.addEventListener("click", e => {
 });
 
 syncInputsFromSettings();
+updateWakeLock();
 setupNumberSteppers();
 setTimeForCurrentMode();
 update();
